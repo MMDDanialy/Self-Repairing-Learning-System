@@ -1,43 +1,57 @@
 # Core Design Principles — Self-Repairing Learning System
 
-## 1. Core Learning Evaluation: Three Tests
+## 1. Project Goal
 
-The system must evaluate learning through three complementary tests.
+Build and experimentally evaluate a locally executable machine-learning system that can identify meaningful model failures, form and test possible explanations, choose informative diagnostic experiments, apply targeted corrections, and verify that those corrections improve the intended behavior without unacceptable regressions.
 
-### 1.1 Performance Test
-Does the model produce correct predictions on the evaluation data?
+The initial scope is deliberately narrow: a controlled computer-vision task involving shortcut learning and distribution shifts. Claims of novelty, broad applicability, or autonomous repair must be supported by related-work review and reproducible experiments.
 
-### 1.2 Generalization Test
-Can the model perform successfully on genuinely unseen examples rather than merely memorizing the training distribution?
+## 2. Core Evaluation: Three Complementary Tests
 
-### 1.3 Dependency and Shortcut Test
-Does the model rely on irrelevant or misleading features? For example, does changing the background affect predictions even when the relevant object remains unchanged?
+### 2.1 Performance Test
+Does the model make correct predictions on the defined evaluation data?
+
+### 2.2 Generalization Test
+Does it perform on genuinely unseen examples, rather than only on examples resembling its training distribution?
+
+### 2.3 Dependency and Shortcut Test
+Does it rely on irrelevant or misleading features? For example, does changing the background change a prediction when the relevant object remains unchanged?
 
 These tests must be considered together. Strong performance on ordinary evaluation data alone is not sufficient evidence of reliable learning.
 
-## 2. Core Decision-Making Loop
-
-The system is organized around three fundamental decisions.
+## 3. Core Decision-Making Loop
 
 ### Decision 1 — Has the model learned sufficiently?
-Evaluate performance, generalization, and dependency on potentially misleading features to determine whether learning meets predefined acceptance criteria.
+Evaluate performance, generalization, and dependence on potentially misleading features against predefined acceptance criteria.
 
-### Decision 2 — If not, what is the likely cause, and which experiment can test it?
-Generate plausible explanations for the observed failure and select an experiment capable of distinguishing between competing hypotheses.
+### Decision 2 — If not, what may have caused the failure, and which experiment can test it?
+Generate competing, testable hypotheses from observed evidence. Select an experiment that can distinguish among those hypotheses; treat diagnoses as provisional until tested.
 
-### Decision 3 — Did the correction genuinely improve the model, or merely move the errors elsewhere?
-Compare the corrected model against the previous version across relevant evaluation criteria, including previously learned capabilities. Accept a correction only when the evidence supports improvement without unacceptable regressions.
+### Decision 3 — Did the correction genuinely improve the model?
+Compare the corrected model with the previous version across target behavior and retained capabilities. Accept a correction only when the evidence supports improvement without unacceptable regressions.
 
-## 3. Iterative Self-Correction Cycle
+## 4. Iterative Self-Correction Cycle
 
 Learning → Testing → Evaluation → Failure Diagnosis → Experiment Selection → Targeted Correction → Re-evaluation
 
-The cycle repeats until the acceptance criteria are met, the available experiments are exhausted, or the system reaches a defined stopping condition.
+Repeat until acceptance criteria are met, useful experiments are exhausted, resources reach a defined limit, or a stopping condition is triggered. Preserve prior model versions so unsuccessful corrections can be rejected or rolled back.
 
-## 4. Evidence-Based Decisions
+## 5. Evidence and Reproducibility
 
-The system must distinguish observed evidence from hypotheses. Diagnoses are provisional until tested, and every correction must be evaluated empirically.
+- Separate observations, hypotheses, decisions, and conclusions in logs.
+- Define evaluation metrics and acceptance criteria before comparing corrections.
+- Record experiments, model/data versions, changes, resource costs, and results.
+- Compare against appropriate baselines; do not claim novelty before reviewing related work.
+- Evaluate regressions as well as gains on the targeted failure.
 
-## 5. Initial Research Scope
+## 6. Initial Scope and Constraints
 
-The first implementation will focus on a controlled machine-learning task involving shortcut learning and distribution shifts. Its effectiveness will be compared against appropriate baseline methods before making claims about novelty or general applicability.
+- Start with a controlled machine-learning/computer-vision task involving shortcut learning and distribution shifts.
+- Prefer local execution and methods that can run within modest hardware limits.
+- Do not make a cloud LLM essential to diagnosis, experiment selection, or correction.
+- Choose the baseline model, dataset, and implementation details only after the research and experimental-design checkpoints justify them.
+- Treat autonomous behavior and generality as claims to test, not assumptions.
+
+## 7. Relationship to the Project Roadmap
+
+`ROADMAP.md` contains the approved 12-checkpoint development and evaluation plan, including the expected outputs and completion criteria for each stage.
