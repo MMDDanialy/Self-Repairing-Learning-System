@@ -1,68 +1,210 @@
-# Related Work — Preliminary Review
+# Related Work — Adaptive Self-Repairing Knowledge Distillation for Object Detection
 
-**Status:** First-pass evidence map; not a complete systematic review.  
-**Purpose:** Inform Checkpoint 2 without prematurely claiming novelty or selecting the final model/dataset.
+**Status:** Checkpoint 2 — introductory literature review (working document)  
+**Purpose:** Build a clear understanding of relevant prior work and record ideas worth investigating. This is not a systematic review and makes no novelty claim.
 
-## 1. Scope
+## 1. Our project focus
 
-This project studies an evidence-driven, locally executable repair loop for **object detection**. Relevant prior work therefore falls into at least four connected areas:
+The project investigates **evaluation-driven adaptation of the Knowledge Distillation (KD) process** for object detection:
 
-1. Evaluating detectors under distribution shift.
-2. Discovering and diagnosing systematic failure slices.
-3. Detecting shortcut/spurious-feature dependence.
-4. Correcting a model and validating gains against regressions and cost.
+- The Teacher remains fixed.
+- The Student is trained and evaluated.
+- Evaluation evidence identifies weaknesses.
+- The KD process is adapted in response to those weaknesses.
+- A candidate Student is validated against the baseline or last accepted version.
+- Changes are accepted, rejected, revised, or rolled back based on measured results.
 
-A benchmark or debugging tool is related work, but is not by itself evidence that an autonomous repair loop is solved.
+**Priority clarification:** Localization quality (where an object is and how accurately its bounding box is placed) is the primary research priority. Class recognition is secondary. The earlier Counter-Strike 2 head-detection work is relevant as a computer-vision example of a localization-centred task: the model's key output was the head bounding box/centre. For this research project, that experience is used only to clarify the technical priority of localization; game-control or aiming integration is not part of the research scope.
 
-## 2. Initial evidence map
+## 2. A basic concept: catastrophic forgetting
 
-| Work | Main contribution reported by the source | Relevance | Limitation for this project |
+In continual or incremental learning, a model first learns some classes and is later trained on new classes. If the later training mostly contains new-class examples, gradient updates can change parameters that were also important for recognizing old classes. The model may become better on new classes while its performance on old classes drops. This is called **catastrophic forgetting**.
+
+This problem is relevant to incremental object detection, where new categories arrive over time. It is **not automatically the same problem as our initial setup**: if our first experiments use a fixed dataset and train the Student on the same set of classes, catastrophic forgetting is not the central motivation. We should study incremental-learning methods for useful KD ideas, but not assume we need a continual-learning system.
+
+## 3. Main papers and what they contribute
+
+### 3.1 When Object Detection Meets Knowledge Distillation: A Survey (Li et al., TPAMI 2023)
+
+**Type:** Survey; it reviews prior work rather than proposing one new detector or one new KD algorithm.
+
+**What it says:** Object detectors have become more capable but can be computationally expensive. KD is one way to transfer useful knowledge from a stronger Teacher to a smaller Student.
+
+**Its useful organization:** It groups methods by the information transferred:
+- **Response-based:** transfer predictions or logits.
+- **Feature-based:** transfer intermediate feature representations.
+- **Relation-based:** transfer relationships among features, locations, or instances.
+
+**Why we use it:** It gives us the map of the object-detection KD field and vocabulary for comparing methods. It also helps avoid treating all KD methods as if they transfer the same kind of information.
+
+**What it does not establish:** It does not demonstrate that our proposed evaluation-driven self-repair loop works or is novel.
+
+Paper: https://pubmed.ncbi.nlm.nih.gov/37028387/  
+DOI: 10.1109/TPAMI.2023.3257546
+
+### 3.2 Knowledge Distillation in Object Detection: A Survey from CNN to Transformer (2026)
+
+**Type:** Survey of object-detection KD, including CNN- and Transformer-based approaches.
+
+**What it says:** It reviews feature-, relation-, and response-based distillation and discusses methods for different detection settings. It includes DKD, KD-Zero, Localization Distillation, and other approaches.
+
+**Why we use it:** It is a recent map of the field and a convenient route to primary papers. We should use it to discover methods, but cite and inspect the original papers before relying on detailed claims.
+
+Paper: https://www.mdpi.com/1424-8220/26/1/292
+
+### 3.3 Decoupled Knowledge Distillation (DKD) — Zhao et al., CVPR 2022
+
+**Type:** Primary research paper; a new way to formulate logit-based KD.
+
+**Problem:** In conventional logit distillation, the contribution from the target class and the non-target classes is coupled. That makes it harder to control their relative influence.
+
+**What the authors do:** They separate the KD objective into:
+- **TCKD:** Target Class Knowledge Distillation.
+- **NCKD:** Non-Target Class Knowledge Distillation.
+
+The two parts can be weighted independently. The paper explains that TCKD carries information related to sample difficulty, while NCKD is an important source of the benefit of logit distillation.
+
+**Reported results and an important qualification:** The paper reports strong results on classification benchmarks. On MS COCO object detection, DKD alone does not produce outstanding results; combining it with a feature-based method (ReviewKD) improves detection results. This matters for our project: DKD is useful and worth retaining as a candidate component, but it should not be assumed to solve localization by itself.
+
+**Ideas to retain for our project:**
+1. Keep different knowledge signals separable where that makes technical sense.
+2. Consider whether their relative weights should be adjusted in response to measured Student weaknesses.
+3. Evaluate DKD as a possible component or baseline, especially for the secondary class-recognition dimension.
+4. Do not let classification improvements stand in for localization improvements.
+
+Paper: https://openaccess.thecvf.com/content/CVPR2022/html/Zhao_Decoupled_Knowledge_Distillation_CVPR_2022_paper.html  
+Code: https://github.com/megvii-research/mdistiller  
+arXiv: https://arxiv.org/abs/2203.08679
+
+### 3.4 KD-Zero: Evolving Knowledge Distiller for Any Teacher-Student Pairs — Li et al., NeurIPS 2023
+
+**Type:** Primary research paper; automated search for KD strategies.
+
+**Problem:** Many KD methods are hand-designed. A method that works for one Teacher–Student pair may not be the best choice for another pair, and manually designing or tuning a distiller can be difficult.
+
+**What the authors do:** They describe a distiller using three building blocks:
+1. Knowledge transformations.
+2. Distance functions.
+3. Loss weights.
+
+They use evolutionary search (candidate generation, selection, crossover, and mutation) to discover promising combinations. The paper also describes ways to reduce search cost, including loss rejection, search-space reduction, and proxy settings.
+
+**Reported results:** The authors report results across classification, detection, and segmentation, with improvements over compared KD methods across diverse Teacher–Student pairs.
+
+**Ideas to retain for our project:**
+1. Treat the KD strategy itself as something that can be searched or adapted, rather than assuming one fixed recipe is always best.
+2. Consider a constrained, small search space first; do not copy the full search system before we know it is needed.
+3. Use the paper's search-cost controls as inspiration.
+4. Compare any adaptive strategy against a fixed KD baseline.
+
+**Important distinction:** KD-Zero searches for a distiller. Our proposed system is broader in a different way: it starts from evaluation evidence about a particular Student weakness, then considers a targeted KD adaptation and validates whether it repairs that weakness. KD-Zero is inspiration and related work, not proof that our complete loop already exists or is novel.
+
+Paper: https://proceedings.neurips.cc/paper_files/paper/2023/hash/dbc8ce0fdfcd55172d73fb05dbae07fc-Abstract.html
+
+### 3.5 Localization Distillation for Dense Object Detection — Zheng et al., CVPR 2022
+
+**Type:** Primary research paper; directly relevant to our localization priority.
+
+**Problem:** Earlier detector KD methods often emphasized feature imitation. Transferring precise localization information through prediction logits was considered difficult, so localization knowledge was not being used effectively.
+
+**What the authors do:** They reformulate distillation to transfer localization information from Teacher to Student. They also introduce the idea of a **valuable localization region**, so the method can selectively emphasize regions that carry useful localization and semantic information.
+
+**Reported result:** On the paper's GFocal-ResNet-50 COCO setup, the reported AP increases from 40.1 to 42.1 under the stated single-scale 1x training schedule, without sacrificing inference speed. These are the paper's reported experimental results, not a guaranteed outcome for our setup.
+
+**Why this is especially important to us:** It directly addresses the distinction we care about: teaching a Student not only what an object is, but where it is. The paper reports that localization distillation can be more important and efficient than semantic knowledge transfer for the detector settings studied.
+
+**Ideas to retain for our project:**
+1. Make localization-specific metrics and errors first-class evaluation targets.
+2. Investigate localization-focused distillation signals, not just classification logits or generic feature losses.
+3. Explore whether regions with weak localization can receive targeted emphasis.
+4. Test whether an adaptive system can identify when localization transfer needs adjustment.
+
+Paper: https://openaccess.thecvf.com/content/CVPR2022/html/Zheng_Localization_Distillation_for_Dense_Object_Detection_CVPR_2022_paper.html  
+arXiv: https://arxiv.org/abs/2204.05957  
+Code: https://github.com/HikariTJU/LD
+
+### 3.6 Focal and Global Knowledge Distillation for Detectors (FGD) — Yang et al., CVPR 2022
+
+**Type:** Primary research paper; feature-based detector distillation.
+
+**Problem:** Teacher and Student feature maps differ across image regions. Treating foreground and background equally can make distillation less effective.
+
+**What the authors do:**
+- **Focal distillation** separates foreground and background and focuses on important pixels and channels.
+- **Global distillation** transfers relationships among different positions to preserve broader contextual information.
+
+**Reported results:** The paper reports improvements on COCO2017 for several detector families, including RetinaNet, Faster R-CNN, RepPoints, and Mask R-CNN.
+
+**Why it matters to us:** It is another localization-adjacent idea: not all spatial regions are equally useful. It may inform region weighting or a combination of local and global signals. It is not itself an evaluation-driven self-repair system.
+
+Paper: https://openaccess.thecvf.com/content/CVPR2022/html/Yang_Focal_and_Global_Knowledge_Distillation_for_Detectors_CVPR_2022_paper.html
+
+### 3.7 Elastic Response Distillation (ERD) — Feng et al., CVPR 2022
+
+**Type:** Primary research paper for incremental object detection.
+
+**Problem:** When a detector is fine-tuned on new classes using only new-class data, its performance on previously learned classes can collapse. This is catastrophic forgetting.
+
+**What the authors do:** ERD distills responses from both the classification head and the regression head. Its Elastic Response Selection strategy selects valuable responses and assigns different importance to different response types.
+
+**Why it matters to us:** It is an example of selecting and weighting response information, including localization-related regression responses.
+
+**Important limitation:** Its central setting is incremental/continual object detection. Our initial project is not necessarily incremental learning. We should borrow useful design ideas only if our experiments need them; we should not make catastrophic forgetting the main project problem without a reason.
+
+Paper: https://openaccess.thecvf.com/content/CVPR2022/html/Feng_Overcoming_Catastrophic_Forgetting_in_Incremental_Object_Detection_via_Elastic_Response_CVPR_2022_paper.html
+
+## 4. Current lessons for our project
+
+These are working takeaways from the papers above, not final implementation decisions:
+
+1. **Localization comes first.** The main evaluation must measure where the Student places objects and how accurate its predicted boxes are. Classification remains important, but secondary.
+2. **Localization Distillation deserves close attention.** It is directly aligned with the main objective and should be one of the first methods we understand and potentially reproduce.
+3. **DKD is worth keeping.** Its separation of target and non-target class knowledge is useful, but the original paper's detection results show that DKD alone should not be treated as a complete localization solution.
+4. **KD-Zero is worth keeping.** Automated search over distillation components is a strong source of ideas. We should begin with a constrained and understandable search/adaptation space rather than immediately implementing a large evolutionary search.
+5. **FGD offers spatial weighting ideas.** Foreground/background separation and local/global information may help decide which regions deserve more distillation attention.
+6. **ERD is a conditional reference.** Its response selection and regression-head ideas may be useful, but its continual-learning setting is not automatically our setting.
+7. **Compute is a design trade-off, not an absolute blocker.** We should optimize unnecessary work and measure cost, but the project has access to comparatively strong local compute. We do not need to reject a promising method merely because it is heavier. The first prototype can still stay simple.
+8. **Parameter complexity should stay proportional to the experiment.** We can begin with a small number of understandable parameters and expand only when evidence justifies it.
+9. **No novelty claim yet.** These papers overlap with parts of our direction. We need to identify precisely what our evaluation-triggered, localization-prioritized adaptation loop adds, if anything, after comparing the primary methods.
+
+## 5. Working comparison
+
+| Method | What it changes or transfers | Main relevance to us | Initial status |
 |---|---|---|---|
-| **COCO-O (ICCV 2023)** — [paper](https://openaccess.thecvf.com/content/ICCV2023/html/Mao_COCO-O_A_Benchmark_for_Object_Detectors_under_Natural_Distribution_Shifts_ICCV_2023_paper.html) | Benchmark for object detectors under six types of natural distribution shift; the paper reports a substantial drop for Faster R-CNN and evaluates many detectors. | Supports measuring more than in-distribution detection performance and gives a candidate source for shifted evaluation. | A robustness benchmark does not itself provide hypothesis-driven diagnosis, cost-aware experiment selection, or closed-loop repair. Dataset suitability and license/compute needs must be checked before adoption. |
-| **COUNTS (CVPR 2025)** — [paper](https://openaccess.thecvf.com/content/CVPR2025/html/Li_COUNTS_Benchmarking_Object_Detectors_and_Multimodal_Large_Language_Models_under_CVPR_2025_paper.html) | Reports an object-level benchmark with 14 natural distribution shifts, over 222K samples, and over 1.196M boxes. | A potentially relevant benchmark for out-of-distribution detection evaluation. | Scale may be too costly for the initial laptop workflow; feasibility, data access, license, and a small controlled subset need assessment. |
-| **RWDS (CVPR 2025)** — [paper](https://openaccess.thecvf.com/content/CVPR2025/html/Al-Emadi_Benchmarking_Object_Detectors_under_Real-World_Distribution_Shifts_in_Satellite_Imagery_CVPR_2025_paper.html) | Introduces three real-world distribution-shift datasets focused on satellite imagery and spatial/geographic or environmental changes. | Demonstrates that realistic shifts can be domain-specific and that split design matters. | Satellite imagery may not be the most practical first domain; its fit to the intended controlled shortcut experiment remains undecided. |
-| **Visual Concept Reviewer (VCR, 2026 journal publication)** — [paper](https://www.sciencedirect.com/science/article/pii/S0306437925001383) | Human-in-the-loop slice-discovery framework for object-detection errors, using visual concepts, metadata, and frequent-itemset mining. The paper reports 1,713 slice-discovery settings across three datasets. | Directly relevant to diagnosing systematic subsets of detector failures and to designing interpretable evidence logs. | Human-in-the-loop slice discovery is not equivalent to automatically choosing a discriminating experiment, applying a targeted correction, and validating regressions. |
-| **Unmasking the Clever Hans effect (2026 review)** — [review](https://pmc.ncbi.nlm.nih.gov/articles/PMC12827554/) | Reviews shortcut learning and spurious correlations across domains, including detection methods and mitigation families such as counterfactual augmentation and slice-aware evaluation. | Provides a conceptual map for shortcut definitions, detection, and mitigation approaches. | Broad cross-domain review; object-detection-specific claims and methods must be traced to primary studies before being used in the experimental design. |
+| DKD | Separates target-class and non-target-class logit distillation | Flexible control of class-related knowledge; secondary priority | Keep as candidate |
+| KD-Zero | Searches transformations, distance functions, and loss weights | Automated discovery/adaptation of distillation strategies | Keep as major inspiration |
+| Localization Distillation | Transfers localization distributions and emphasizes valuable regions | Directly aligned with localization-first objective | High-priority method to study |
+| FGD | Weights focal foreground/background features and global relations | Spatially selective feature transfer | Candidate to study |
+| ERD | Selects and weights classification and regression responses in incremental detection | Response selection and localization regression transfer | Conditional reference |
 
-## 3. Preliminary implications
+## 6. Practical constraints and preferences
 
-- **Evaluation needs multiple views.** In-distribution metrics alone cannot establish robust behavior. The design should separately report ordinary detection quality, shifted/generalization performance, and sensitivity to a controlled nuisance feature.
-- **Failure slices can be diagnostic units.** Aggregate metrics can hide subsets with systematic errors. Candidate methods should identify which conditions, visual concepts, or metadata correlate with failure, while treating correlation as evidence for a hypothesis rather than proof of causation.
-- **Controlled interventions are important.** A useful shortcut test should vary a candidate nuisance factor while keeping the object and its annotation valid. The protocol must avoid introducing editing artifacts that become a new shortcut.
-- **Correction is not the same as diagnosis.** A method that detects a failure or produces an explanation does not necessarily establish which intervention will fix it.
-- **Regression testing is part of the contribution target.** Any candidate correction should be compared with the previous model on the target failure, retained capabilities, relevant shifts, and computational cost.
-- **Local feasibility must be considered from the start.** Large benchmarks can be useful for external validation, but the first reproducible experiment should have a controlled, manageable compute budget.
+- Prefer an efficient implementation, but do not impose an artificially tiny compute budget: strong local compute is available for heavier experiments.
+- Keep the initial prototype and parameter space understandable. Avoid premature complexity.
+- Measure training/search overhead, but judge it against the value of the resulting localization improvement.
+- Keep the Teacher fixed during the self-repair loop.
+- Compare adaptive KD with a fair fixed-KD baseline.
+- Evaluate localization directly; do not use classification accuracy or aggregate mAP alone as a substitute for localization analysis.
+- Preserve negative and inconclusive results as part of the research record.
 
-## 4. Candidate research direction — not a novelty claim
+## 7. What we should read next
 
-A direction worth testing is a **cost-aware, evidence-linked repair loop for object detection** that:
+Read the primary papers in this order:
+1. **Localization Distillation** — because localization is our first priority.
+2. **DKD** — understand the two separately weighted knowledge components and its limitations on detection.
+3. **KD-Zero** — understand how the distiller search space is built and how search cost is controlled.
+4. **FGD** — understand spatially selective feature distillation.
+5. **ERD** — only to extract ideas about response selection and regression transfer, while keeping its incremental-learning assumption clear.
 
-1. Detects a predefined failure from evaluation evidence.
-2. Maintains multiple competing hypotheses.
-3. Chooses a low-cost experiment expected to discriminate among those hypotheses.
-4. Applies a traceable correction linked to the tested hypothesis.
-5. accepts or rejects the correction using predeclared target-improvement and regression criteria.
-6. Logs the decision, evidence, resource cost, model/data versions, and rollback outcome.
+## 8. References
 
-This is a research hypothesis about a potentially useful integration, **not a claim that the combination is novel**. Related work must be expanded to include primary papers on model debugging, slice discovery, active learning/experiment design, shortcut mitigation, and automated or iterative model repair. The final gap statement must be revised after that comparison.
+1. Li et al., “When Object Detection Meets Knowledge Distillation: A Survey,” IEEE TPAMI, 2023. https://doi.org/10.1109/TPAMI.2023.3257546
+2. “Knowledge Distillation in Object Detection: A Survey from CNN to Transformer,” Sensors, 2026. https://www.mdpi.com/1424-8220/26/1/292
+3. Zhao et al., “Decoupled Knowledge Distillation,” CVPR 2022. https://doi.org/10.1109/CVPR52688.2022.01165
+4. Li et al., “KD-Zero: Evolving Knowledge Distiller for Any Teacher-Student Pairs,” NeurIPS 2023. https://proceedings.neurips.cc/paper_files/paper/2023/hash/dbc8ce0fdfcd55172d73fb05dbae07fc-Abstract.html
+5. Zheng et al., “Localization Distillation for Dense Object Detection,” CVPR 2022. https://doi.org/10.1109/CVPR52688.2022.00919
+6. Yang et al., “Focal and Global Knowledge Distillation for Detectors,” CVPR 2022. https://openaccess.thecvf.com/content/CVPR2022/html/Yang_Focal_and_Global_Knowledge_Distillation_for_Detectors_CVPR_2022_paper.html
+7. Feng et al., “Overcoming Catastrophic Forgetting in Incremental Object Detection via Elastic Response Distillation,” CVPR 2022. https://openaccess.thecvf.com/content/CVPR2022/html/Feng_Overcoming_Catastrophic_Forgetting_in_Incremental_Object_Detection_via_Elastic_Response_CVPR_2022_paper.html
 
-## 5. Decisions intentionally left open
-
-This first pass does **not** select a detector architecture, final dataset, correction algorithm, numerical acceptance threshold, or deployment stack. Those decisions belong after the related-work review and controlled experimental design.
-
-## 6. Next literature-review tasks
-
-- Trace VCR and the benchmark papers to their relevant cited work.
-- Compare detector failure-slice discovery methods, including their human-supervision requirements and local runtime.
-- Review data-centric and model-centric shortcut mitigation in object detection, with attention to unintended new shortcuts.
-- Review active diagnosis / experiment-selection methods and their assumptions about hypothesis spaces and cost.
-- Identify simple, fair baselines for repair-loop evaluation.
-- Record for each candidate: evidence type, task, compute cost, required supervision, correction capability, regression checks, code/data availability, and limitations.
-
-## References
-
-1. Mao et al., “COCO-O: A Benchmark for Object Detectors under Natural Distribution Shifts,” ICCV 2023. [Open-access paper](https://openaccess.thecvf.com/content/ICCV2023/html/Mao_COCO-O_A_Benchmark_for_Object_Detectors_under_Natural_Distribution_Shifts_ICCV_2023_paper.html)
-2. Li et al., “COUNTS: Benchmarking Object Detectors and Multimodal Large Language Models under Distribution Shifts,” CVPR 2025. [Open-access paper](https://openaccess.thecvf.com/content/CVPR2025/html/Li_COUNTS_Benchmarking_Object_Detectors_and_Multimodal_Large_Language_Models_under_CVPR_2025_paper.html)
-3. Al-Emadi et al., “Benchmarking Object Detectors under Real-World Distribution Shifts in Satellite Imagery,” CVPR 2025. [Open-access paper](https://openaccess.thecvf.com/content/CVPR2025/html/Al-Emadi_Benchmarking_Object_Detectors_under_Real-World_Distribution_Shifts_in_Satellite_Imagery_CVPR_2025_paper.html)
-4. “VCR: Interpretable and interactive debugging of object detection models with visual concepts,” Information Systems, 2026. [Publisher page](https://www.sciencedirect.com/science/article/pii/S0306437925001383)
-5. “Unmasking the Clever Hans effect in AI models: shortcut learning, spurious correlations, and the path toward robust intelligence,” Frontiers in AI, 2026. [Open-access review](https://pmc.ncbi.nlm.nih.gov/articles/PMC12827554/)
+---
+**Checkpoint 2 note:** This is an introductory working review. It records papers we have used and ideas to retain; it does not claim the review is exhaustive or that any method has been selected for implementation.
