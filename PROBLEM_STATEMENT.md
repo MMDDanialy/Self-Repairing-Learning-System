@@ -1,192 +1,178 @@
-# Problem Statement — Self-Repairing Learning System
+# Problem Statement — Adaptive Self-Repairing Knowledge Distillation
 
-**Status:** Initial specification — subject to revision after related-work review and experimental design  
+**Status:** Checkpoint 1 — problem and scope defined; implementation details deferred  
 **Project:** Self-Repairing Learning System  
-**Primary research domain:** Object detection under shortcut learning and distribution shifts
+**Primary task:** Object detection  
+**Learning setup:** Teacher–Student Knowledge Distillation  
+**Teacher policy:** Fixed Teacher  
+**Self-repair mechanism:** Adaptive adjustment of the distillation process
 
-## 1. Problem Statement
+## 1. Problem Definition
 
-Machine-learning models can achieve strong performance on conventional evaluation data while remaining vulnerable to misleading features, spurious correlations, and changes in the data distribution. When these failures occur, improving the model is not simply a matter of retraining it: the underlying cause may be uncertain, different explanations may require different interventions, and a correction that improves one metric may degrade previously learned capabilities.
+Knowledge Distillation (KD) transfers knowledge from a Teacher model to a smaller or otherwise target Student model. In a conventional fixed distillation setup, the transfer configuration is predetermined and may not be equally effective across training stages, samples, classes, or operating conditions. Consequently, the Student may fail to absorb useful knowledge in some areas while achieving acceptable aggregate performance.
 
-This project investigates a locally executable, evidence-driven system that can detect meaningful failures in a machine-learning model, formulate and test competing explanations, select informative diagnostic experiments, apply targeted corrections, and determine whether those corrections are successful without unacceptable regressions.
+This project investigates an **Adaptive Self-Repairing Knowledge Distillation** framework for object detection. The framework evaluates the Student, identifies measurable weaknesses, and uses evaluation feedback to select and apply targeted changes to the distillation process. The Teacher remains fixed throughout the self-repair cycle. The Student is the model being trained and evaluated; the primary repair mechanism is adaptation of knowledge transfer rather than direct modification of the Teacher or autonomous redesign of the Student architecture.
 
-**Object detection is the mandatory primary task.** Classification may be used as a supporting task for preliminary experiments, controlled comparisons, or methodological validation when justified, but it will not replace object detection as the main research target.
+The central research question is:
 
-The project will begin with a controlled computer-vision setting involving shortcut learning and distribution shifts. The specific model, dataset, intervention methods, and experimental configuration will be selected only after the related-work review and experimental-design stages.
+> Can evaluation feedback from an object-detection Student be used to adapt the Knowledge Distillation process with a fixed Teacher, so that targeted weaknesses in the Student are improved while unacceptable regressions in other performance dimensions are avoided?
 
-The project does not assume that fully autonomous repair, general applicability, or research novelty has already been established. These are claims to investigate and evaluate.
+This is a research question, not an assumed result. Its answer must be established experimentally.
 
 ## 2. Research Objectives
 
-The project has the following objectives:
+1. Establish a reproducible Teacher–Student baseline for object detection.
+2. Evaluate Student performance globally and across meaningful classes or data subsets.
+3. Identify measurable weaknesses that can plausibly be addressed through knowledge transfer.
+4. Design a mechanism that selects targeted adaptations to the distillation process based on evaluation evidence.
+5. Apply controlled changes to distillation components while keeping the Teacher fixed.
+6. Validate each change against the baseline and the preceding accepted Student version.
+7. Reject, revise, or roll back adaptations that fail acceptance criteria or cause unacceptable regressions.
+8. Compare the adaptive approach with an appropriate fixed, non-adaptive Knowledge Distillation baseline.
+9. Record experiments, configurations, decisions, and results to support reproducibility.
 
-1. **Failure detection:** Identify meaningful failures in object detection using predefined evaluation procedures.
-2. **Evidence-based diagnosis:** Generate competing hypotheses that explain observed failures and connect each hypothesis to measurable evidence.
-3. **Diagnostic experiment selection:** Select experiments that can distinguish among hypotheses while accounting for expected information value, computational cost, execution time, and feasibility.
-4. **Targeted correction:** Apply a correction that addresses a supported failure hypothesis rather than relying exclusively on indiscriminate retraining.
-5. **Correction validation:** Compare the corrected model with its previous version and determine whether the target failure improved without unacceptable regressions.
-6. **Iterative self-repair:** Integrate evaluation, diagnosis, experiment selection, correction, and validation into a repeatable loop.
-7. **Reproducible evaluation:** Compare the proposed approach with appropriate baselines and report improvements, regressions, costs, limitations, and inconclusive results.
-8. **Practical deployment validation:** Evaluate the prepared object-detection model on Raspberry Pi 5 hardware during the final stages, subject to hardware compatibility and resource constraints.
+## 3. Scope
 
-## 3. Scope and Target Failure Modes
+### 3.1 In scope
 
-### In scope
+- Object detection as the primary experimental task.
+- A Teacher–Student Knowledge Distillation setup.
+- A fixed Teacher during the self-repair process.
+- A trainable and evaluable Student.
+- Adaptive changes to the Knowledge Distillation process.
+- Candidate adaptation dimensions, subject to later research and experimental design:
+  - weights assigned to distillation-loss components;
+  - distillation temperature;
+  - sample- or region-level weighting;
+  - other justified knowledge-transfer parameters.
+- Evaluation of overall detection performance and performance across relevant classes or data subsets.
+- Generalization and robustness checks where supported by the experimental design.
+- Controlled validation, acceptance, rejection, and rollback of proposed adaptations.
+- Comparison against fixed, non-adaptive KD and other justified baselines.
 
-- Object detection as the primary task.
-- Reliance on irrelevant or misleading visual features and shortcut correlations.
-- Performance degradation under relevant distribution shifts.
-- Generalization failures on appropriately defined unseen data.
-- Evidence-linked failure diagnosis and testable hypotheses.
-- Cost-aware selection of diagnostic experiments.
-- Targeted correction, version tracking, rollback, and regression prevention.
-- Local execution of the self-repair loop.
-- Reproducible comparisons against appropriate baseline approaches.
+### 3.2 Out of scope for the initial version
 
-### Supporting or conditional scope
+- Updating or repairing the Teacher during the self-repair cycle.
+- Making direct Student architecture modification the primary self-repair mechanism.
+- Claiming that every Student failure can be corrected through distillation.
+- Claiming universal applicability across arbitrary tasks or model families.
+- Assuming research novelty or performance improvement before experimental validation.
+- Requiring a cloud LLM for the essential adaptation and validation loop.
 
-- Classification experiments, when they provide a clear methodological benefit.
-- Alternative detection architectures and correction methods, selected after research and feasibility analysis.
-- Hardware-specific optimization for Raspberry Pi 5 during final deployment validation.
-- Hailo acceleration, if the required hardware is confirmed to be available and compatible.
+The Student architecture, Teacher architecture, dataset, exact KD formulation, and adaptation algorithm are not fixed in Checkpoint 1. They will be selected in later checkpoints based on related work, feasibility, and controlled experimental design.
 
-### Out of scope for the initial specification
+## 4. Self-Repair Cycle
 
-- Claiming universal self-repair across arbitrary tasks or model families.
-- Assuming that every failure can be diagnosed or corrected automatically.
-- Requiring a cloud-based large language model for the essential repair loop.
-- Selecting a specific architecture, dataset, or correction algorithm before the relevant research and design checkpoints.
+The proposed cycle is:
 
-## 4. Proposed Self-Repair Process
+1. **Evaluate Student:** Measure detection performance using the defined evaluation protocol.
+2. **Identify weakness:** Find meaningful underperforming classes, metrics, samples, or data conditions.
+3. **Select an adaptation:** Choose a justified change to the distillation process based on the available evidence.
+4. **Adapt distillation:** Apply the selected configuration while keeping the Teacher fixed.
+5. **Train or continue Student training:** Produce a candidate Student using the adapted knowledge-transfer process.
+6. **Validate:** Compare the candidate with the baseline or last accepted Student under comparable conditions.
+7. **Decide:** Accept, reject, revise, or roll back the adaptation according to predefined criteria.
+8. **Repeat or stop:** Continue while useful adaptations and resources remain, or stop according to the experimental stopping rules.
 
-The system will investigate the following iterative process:
+Every cycle must record the Student version, fixed Teacher identity, data and configuration, detected weakness, selected adaptation, rationale, training details, evaluation results, and final decision.
 
-1. **Evaluate:** Measure model performance, generalization, and sensitivity to potentially misleading features.
-2. **Detect:** Determine whether observed behavior meets predefined failure-trigger criteria.
-3. **Diagnose:** Form competing hypotheses supported by available evidence.
-4. **Design an experiment:** Specify what each candidate experiment is expected to reveal and how its result could change the diagnosis.
-5. **Select an experiment:** Consider diagnostic value, cost, time, and available resources.
-6. **Apply a correction:** Make a traceable intervention justified by the diagnostic evidence.
-7. **Validate:** Evaluate the corrected model against the previous version using comparable test procedures.
-8. **Decide:** Accept, reject, revise, or roll back the correction according to predefined criteria.
-9. **Repeat or stop:** Continue while useful experiments and resources remain, or stop when the stopping criteria are met.
+## 5. Evaluation Criteria
 
-The process must preserve model versions and record relevant data, configurations, hypotheses, experiments, interventions, evaluation results, and decisions.
+The exact metrics and protocols will be finalized after selecting the detection models and dataset. The evaluation framework will cover:
 
-## 5. Evaluation Framework
+### 5.1 Detection performance
 
-The project will use three complementary evaluation dimensions.
+- mAP, using a clearly specified IoU protocol.
+- Precision and Recall.
+- Per-class Average Precision.
+- Relevant error or data-subset analyses where supported by the dataset.
 
-### 5.1 Predictive performance
+### 5.2 Generalization and robustness
 
-Does the object detector correctly identify and localize objects on the defined evaluation data?
+- Performance on held-out evaluation data.
+- Performance under selected, explicitly defined distribution shifts or diagnostic conditions.
+- Whether improvements on a target weakness are retained beyond the data used to select the adaptation.
 
-The final metric or metrics will be selected after the literature review and dataset design.
+### 5.3 Self-repair effectiveness
 
-### 5.2 Generalization and distribution-shift robustness
+- Whether the system identifies a measurable Student weakness.
+- Whether the selected adaptation is traceably connected to that weakness.
+- Whether the target behavior improves after adaptation.
+- Whether other important metrics or capabilities regress.
+- Whether the system makes justified accept, reject, revise, and rollback decisions.
 
-Does the model retain acceptable performance on appropriately defined unseen data and relevant shifted distributions?
+### 5.4 Efficiency and reproducibility
 
-The experimental design must distinguish ordinary held-out evaluation from deliberately constructed diagnostic or shifted conditions where appropriate.
+- Training and evaluation compute cost.
+- Adaptation and experiment runtime.
+- Repeatability across runs or random seeds.
+- Completeness of experiment and decision records.
 
-### 5.3 Shortcut and spurious-dependency evaluation
+A gain in one metric alone is not sufficient to establish a successful repair.
 
-Does the model depend on features that are irrelevant to the intended prediction?
+## 6. Acceptance Criteria
 
-Controlled interventions, such as changing an irrelevant background while preserving the relevant object, may be considered if supported by the research review and experimental design.
+A proposed adaptation may be accepted only when:
 
-### 5.4 Correction and system-level evaluation
+1. The target weakness and intended improvement are specified before the validation run.
+2. The candidate is compared with the baseline or last accepted Student under comparable data, training, and evaluation conditions.
+3. The target metric or behavior improves according to a threshold defined before the relevant experiment.
+4. Regression in other required metrics remains within limits defined before the relevant experiment.
+5. The result is sufficiently repeatable under the agreed experimental protocol.
+6. The adaptation, its rationale, configuration, results, and decision are recorded.
+7. Evaluation data reserved for final testing are not repeatedly used to select adaptations.
 
-The self-repair system will additionally be assessed on:
+Numerical improvement thresholds, regression limits, number of seeds, and stopping conditions are intentionally deferred until the baseline, dataset, and experimental protocol are established. They must be fixed before the experiments that use them.
 
-- Reduction of the targeted failure.
-- Retention of previously learned capabilities.
-- Frequency and severity of regressions.
-- Quality of diagnostic hypotheses and supporting evidence.
-- Usefulness and cost of selected experiments.
-- Correction acceptance, rejection, and rollback decisions.
-- Computational cost, elapsed time, and repeatability.
-- Performance relative to appropriate baseline methods.
+At system level, the prototype must demonstrate a complete traceable cycle: evaluate, identify a weakness, select and apply a KD adaptation with a fixed Teacher, validate the result, and make an evidence-based decision.
 
-A gain on a single target metric will not, by itself, establish that a correction is successful.
+## 7. Constraints and Research Integrity
 
-## 6. Qualitative Acceptance Criteria
-
-The initial system will be considered to demonstrate a successful self-repair cycle when it can:
-
-1. Reproducibly detect a predefined, meaningful failure in the selected object-detection setting.
-2. Produce explicit, testable diagnostic hypotheses linked to observed evidence.
-3. Select and execute a diagnostic experiment with a documented rationale.
-4. Apply a traceable correction linked to the investigated failure.
-5. Evaluate the correction against the previous model using comparable procedures.
-6. Accept, reject, or roll back the correction based on predefined criteria.
-7. Demonstrate improvement in the target behavior without exceeding the agreed regression limits.
-8. Record sufficient information for another person to reproduce and inspect the experiment.
-9. Run the essential self-repair loop locally without requiring a cloud LLM.
-
-These criteria define the intended behavior, not a claim that the system has already achieved it.
-
-## 7. Execution and Hardware Constraints
-
-The planned workflow separates model development, self-repair experimentation, and final deployment validation.
-
-### Development and training
-
-The user's laptop will serve as the initial environment for developing and testing the self-repair loop. More demanding training or model preparation may use organizational computers equipped with two NVIDIA RTX 4060 GPUs, subject to actual availability and configuration.
-
-### Local self-repair loop
-
-The initial implementation should prioritize reproducibility, resource awareness, and compatibility with the laptop development environment. Exact memory, runtime, and compute budgets remain to be established after the experimental workload is defined.
-
-### Final deployment validation
-
-The prepared object-detection model will be evaluated on Raspberry Pi 5 hardware in the later stages of the project. The availability of Hailo accelerators and the corresponding software and model compatibility remain unconfirmed.
-
-The initial plan does not require the complete self-repair loop to run on the Raspberry Pi. The primary plan is to execute the loop on a development computer and deploy the resulting prepared model to the Raspberry Pi for final hardware testing.
-
-## 8. Constraints and Research Integrity
-
-- The primary task must remain object detection.
-- Research and experimental design must precede final model and dataset selection.
-- Evaluation criteria must be defined before comparing corrections.
-- Diagnostic explanations must remain hypotheses until tested.
+- Object detection remains the primary task.
+- The Teacher remains fixed during self-repair.
+- The primary self-repair mechanism operates within Knowledge Distillation.
+- The Student is the target of training and evaluation.
+- The adaptive method must be compared with a fixed, non-adaptive KD baseline.
+- Evaluation protocols and acceptance thresholds must be defined before judging candidate adaptations.
 - Data leakage and invalid comparisons must be prevented.
-- Previous model versions must be retained to support fair evaluation and rollback.
-- Resource use must be recorded and considered when selecting experiments.
+- Previous Student checkpoints and experiment configurations must be retained for comparison and rollback.
 - Negative, inconclusive, and regression results must be documented.
-- Research novelty and general applicability must not be claimed without supporting evidence.
-- Cloud LLM services must not be essential to the core repair process.
+- No improvement, novelty, or generality claim is valid without supporting experimental evidence.
 
-## 9. Decisions Deferred to Later Checkpoints
+## 8. Decisions Deferred to Later Checkpoints
 
-The following decisions remain open and must be resolved through research and experimental design:
+The following are deliberately left open:
 
-- Specific object-detection architecture and baseline.
-- Dataset and data-licensing requirements.
-- Construction of controlled shortcut and distribution-shift scenarios.
-- Evaluation metrics and numerical acceptance thresholds.
-- Permitted regression limits.
-- Failure-trigger rules and stopping conditions.
-- Candidate diagnosis and correction methods.
-- Experiment-selection strategy and computational budgets.
-- Exact laptop and organizational compute constraints.
-- Raspberry Pi 5 compatibility requirements and Hailo availability.
-- The research gap, contribution claims, and scope of any novelty claim.
+- Teacher and Student detection architectures.
+- Dataset, licensing, and data-split protocol.
+- Exact feature-, logit-, or other KD formulation.
+- Exact adaptation variables and their permitted ranges.
+- Method used to identify Student weaknesses.
+- Algorithm used to select the next distillation adaptation.
+- Numerical acceptance thresholds and regression limits.
+- Training schedule, compute budget, seeds, and stopping rules.
+- Deployment and hardware requirements.
 
-These decisions should not be fixed merely to make the initial specification appear complete.
+These decisions will be made through related-work review and experimental design, not by assumption.
 
-## 10. Relationship to the Roadmap
+## 9. Checkpoint 1 Completion
 
-This document defines the problem, research objectives, initial constraints, and evaluation principles for Checkpoint 1.
+Checkpoint 1 establishes the following decisions:
 
-`CORE_DESIGN.md` describes the system's overarching design principles, while `ROADMAP.md` defines the approved 12-checkpoint implementation and evaluation plan.
+| Item | Decision |
+|---|---|
+| Primary experimental domain | Object detection |
+| Learning framework | Teacher–Student Knowledge Distillation |
+| Teacher role | Fixed |
+| Primary self-repair location | Adaptive distillation process |
+| Target model | Student |
+| Main validation principle | Evidence-based improvement with regression control |
+| Required comparison | Fixed, non-adaptive KD baseline |
 
-Checkpoint 2 will review related work and identify evidence-supported candidate approaches. Checkpoint 3 will define the controlled experimental environment and refine dataset-dependent metrics, numerical thresholds, resource budgets, and stopping conditions.
+Checkpoint 2 will review related work relevant to adaptive Knowledge Distillation, object detection distillation, Student weakness analysis, and evaluation of targeted improvements. Checkpoint 3 will define the controlled experimental environment and protocol.
 
-The specification may be revised when later evidence justifies a change. Such revisions should be documented rather than silently changing the research objective.
+## 10. Expected Outcome
 
-## 11. Expected Outcome
+The intended outcome is a reproducible research prototype that investigates whether evaluation-driven adaptation of Knowledge Distillation, with a fixed Teacher, can improve an object-detection Student on identified weaknesses while controlling regressions and computational cost.
 
-The intended outcome is a reproducible, locally executable research prototype that investigates whether evidence-driven diagnosis and targeted correction can improve an object-detection model under controlled failure conditions, while accounting for regressions and computational cost.
-
-The success of this research will be determined by the quality of the experimental evidence and baseline comparisons, not merely by the completion of an automated pipeline.
+Research success will be determined by controlled experiments and baseline comparisons, not merely by implementing an automated pipeline.
