@@ -166,3 +166,42 @@ This roadmap defines the approved 12 checkpoints. Work should proceed in order: 
 The initial project is successful when it can run locally, detect a defined meaningful failure, form evidence-linked hypotheses, select a useful diagnostic experiment with cost considered, apply a targeted correction, and validate whether the correction improves the target behavior without unacceptable regressions. It must be compared against suitable baselines, remain reproducible, and not depend essentially on a cloud LLM.
 
 A successful prototype does not by itself establish novelty or general applicability; those conclusions require evidence from the related-work review and experiments.
+
+
+---
+
+## Checkpoint Update — UAV Application Context
+
+The following updates supersede the corresponding scope details above where they conflict. The central research direction remains Adaptive Self-Repairing Knowledge Distillation for Object Detection; this update does not authorize premature selection of a model, dataset, or training stack.
+
+### Checkpoint 1 — Define the Exact Problem and Goal
+
+Record the clarified application context:
+- Application: security-oriented visual monitoring of Lark Garden by a UAV.
+- Initial detection categories: humans and relevant animals, including dogs, cats, and foxes. The final class list must be confirmed with the UAV team.
+- Fixed deployment platform: Raspberry Pi 5 with 8 GB RAM.
+- Research method remains a fixed-Teacher, adaptive-KD process targeting measurable Student weaknesses, with a fixed non-adaptive KD baseline.
+- The intended system reports visual detections for human review; a detection is not proof of wrongdoing or identity.
+
+### Checkpoint 3 — Dataset and Data Requirements
+
+Before selecting a dataset:
+- Compare suitable public object-detection datasets against the confirmed target classes and aerial/UAV viewpoint.
+- Determine whether the UAV team can provide appropriately authorized real images or video from the intended environment.
+- Assess annotation requirements, class balance, image conditions, licensing, privacy, and train/validation/test separation.
+- Consider synthetic data only as a supplementary source; evaluate its domain gap against real imagery.
+- Keep a genuinely independent real-world evaluation set where feasible.
+
+**Deliverable:** evidence-based dataset and data-collection plan. Dataset choice is not finalized here.
+
+### Checkpoint 4 — Technical Design and Compute Feasibility
+
+Assess training and deployment as separate compute problems:
+- **Deployment target (fixed):** Raspberry Pi 5, 8 GB RAM. Candidate detectors must be assessed for supported inference runtimes, memory use, latency, and practical optimization on this platform.
+- **Training system (open):** estimate GPU/VRAM needs from candidate Teacher/Student models, input resolution, batch size, dataset scale, and planned experiments.
+- Compare cloud GPU rental with purchasing hardware using estimated total experiment time and cost.
+- A pretrained detector followed by fine-tuning is the current preferred starting strategy, but the model family and Teacher/Student pair remain undecided.
+
+**Deliverable:** documented training-compute estimate and deployment-feasibility comparison. The preliminary 64 GB VRAM figure is an estimate to verify, not an approved requirement.
+
+All other checkpoints remain unchanged by this application-context update.
