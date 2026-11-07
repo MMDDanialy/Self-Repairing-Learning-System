@@ -176,3 +176,20 @@ Checkpoint 2 will review related work relevant to adaptive Knowledge Distillatio
 The intended outcome is a reproducible research prototype that investigates whether evaluation-driven adaptation of Knowledge Distillation, with a fixed Teacher, can improve an object-detection Student on identified weaknesses while controlling regressions and computational cost.
 
 Research success will be determined by controlled experiments and baseline comparisons, not merely by implementing an automated pipeline.
+
+
+## 11. Operational Context Update — Lark Garden UAV
+
+This section records the operational context clarified after the initial Checkpoint 1 definition. It narrows the intended application context but does not change the central research question or the self-repairing Knowledge Distillation methodology.
+
+- **Application context:** security-oriented monitoring of the large Lark Garden site by an unmanned aerial vehicle (UAV).
+- **Initial detection categories:** humans and relevant animals, initially including dogs, cats, and foxes. The final class list remains subject to confirmation with the UAV team and dataset availability.
+- **On-board compute platform:** Raspberry Pi 5 with 8 GB RAM. This is the current fixed deployment target.
+- **Training compute:** separate from on-board deployment compute. GPU/VRAM requirements and the choice between cloud compute and purchased hardware remain undecided and must be estimated from the selected models, image resolution, batch size, dataset, and experiment plan.
+- **Initial model strategy under consideration:** start from a suitable pretrained object detector and fine-tune it, rather than assume training from scratch. This is a working preference, not a finalized architecture decision.
+
+The final detector must be evaluated for feasible inference on the Raspberry Pi 5. Deployment optimization must not replace or weaken the central research contribution: adaptive, evaluation-driven Knowledge Distillation with a fixed Teacher and a measurable comparison against fixed, non-adaptive KD.
+
+The system's intended output is detection of specified visual categories/events for human review. A detection alone must not be treated as proof of wrongdoing or identity. Dataset collection and deployment must respect applicable privacy, consent, and site policies.
+
+These operational details do not finalize the dataset, model family, Teacher/Student pair, input resolution, inference target, training GPU, or deployment pipeline. Those remain open for their corresponding checkpoints.
