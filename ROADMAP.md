@@ -205,3 +205,34 @@ Assess training and deployment as separate compute problems:
 **Deliverable:** documented training-compute estimate and deployment-feasibility comparison. The preliminary 64 GB VRAM figure is an estimate to verify, not an approved requirement.
 
 All other checkpoints remain unchanged by this application-context update.
+
+
+---
+
+## Checkpoint Sign-Off Update — 2026-11-10
+
+This status record supersedes earlier checkpoint status notes where they conflict.
+
+### Checkpoint 2 — Review Related Work
+**Status: CLOSED / COMPLETE.**
+
+The literature review is recorded in [RELATED_WORK.md](RELATED_WORK.md). Its conclusion remains appropriately bounded: the proposed Student-error-driven, localization-aware, closed-loop KD adaptation is a potential research gap, not a proven novelty claim.
+
+### Checkpoint 3 — Dataset and Evaluation Protocol
+**Status: APPROVED / COMPLETE (project-owner sign-off).**
+
+The approved specification is recorded in [DATASET_AND_EVALUATION_REQUIREMENTS.md](DATASET_AND_EVALUATION_REQUIREMENTS.md). It sets the initial prototype to single-class person detection, prioritizes localization diagnostics, separates laboratory training from Raspberry Pi 5 deployment, and defines a proposed hold-out acceptance gate.
+
+Numerical budgets, candidate models, dataset partition details, target-size estimates, and trigger thresholds that are explicitly marked provisional in the specification must be empirically validated. Their inclusion does not mean they have already been benchmarked.
+
+### Checkpoint 4 — Core Software Pipeline
+**Status: NEXT / NOT STARTED.**
+
+The immediate handoff is to construct the core pipeline:
+- Data ingestion and person-filtering scripts.
+- Baseline Teacher inference setup.
+- Student baseline training without adaptation.
+- TIDE diagnostic parser integration.
+- LD-style localization distillation loss integration.
+
+The Teacher–Student pair and implementation stack remain candidates until compatibility and hardware feasibility are tested.
