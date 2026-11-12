@@ -1,0 +1,39 @@
+{
+  "eval_name": "visdrone_person_evaluation",
+  "target_class": "Person",
+  "category_id": 0,
+  "iou_thresholds": {
+    "ap50": 0.50,
+    "ap75": 0.75,
+    "tide_fg": 0.50,
+    "tide_bg": 0.10
+  },
+  "coco_map_range": {
+    "start": 0.50,
+    "stop": 0.95,
+    "step": 0.05
+  },
+  "scale_buckets_px_area": {
+    "small": {
+      "min_area": 0,
+      "max_area": 1024,
+      "description": "Small distant human instances (< 1024 px^2)"
+    },
+    "medium": {
+      "min_area": 1024,
+      "max_area": 9216,
+      "description": "Medium-range human instances (1024..9216 px^2)"
+    },
+    "large_low_alt": {
+      "min_area": 9216,
+      "max_area": null,
+      "description": "Low-altitude UAV targets >= 9216 px^2 (5..10m AGL operational envelope)"
+    }
+  },
+  "gate_thresholds": {
+    "min_ap75_gain_percentage_points": 0.5,
+    "max_normalized_center_error_increase": 0.0,
+    "max_rpi5_latency_ms": 45.0,
+    "tide_loc_trigger_threshold": 0.40
+  }
+}
