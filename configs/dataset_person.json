@@ -1,0 +1,16 @@
+{
+  "dataset_name": "visdrone_person",
+  "processed_dir": "data/processed/visdrone_person",
+  "class_names": [
+    "Person"
+  ],
+  "num_classes": 1,
+  "bbox_format": "xywh_abs",
+  "supported_target_formats": [
+    "xyxy_abs",
+    "xywh_norm"
+  ],
+  "deterministic_val_split_ratio": 0.15,
+  "random_seed": 42,
+  "include_empty_background_images": true
+}
