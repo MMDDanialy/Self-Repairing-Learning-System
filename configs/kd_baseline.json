@@ -1,0 +1,17 @@
+{
+  "distillation_name": "visdrone_person_localization_distillation",
+  "target_class": "Person",
+  "category_id": 0,
+  "ld_temperature": 10.0,
+  "ld_weight": 1.0,
+  "vlr_margin_ratio": 0.25,
+  "num_bbox_bins": 17,
+  "bin_bounds": [0, 16],
+  "loss_reduction": "mean",
+  "smoke_subset": {
+    "train_samples": 200,
+    "val_samples": 50,
+    "random_seed": 42,
+    "manifest_path": "configs/smoke_subset_manifest.json"
+  }
+}
